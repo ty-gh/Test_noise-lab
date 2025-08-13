@@ -483,241 +483,76 @@
                 return src;
             }
 
-            // Procedural sounds
-            function buildVoice() {
-                const src = makeBufferSource(createNoiseBuffer(2));
-                const bp = audioCtx.createBiquadFilter();
-                bp.type = "bandpass";
-                bp.frequency.value = 1400;
-                bp.Q.value = 0.8;
-                const hp = audioCtx.createBiquadFilter();
-                hp.type = "highpass";
-                hp.frequency.value = 200;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.0;
-                const lfo1 = audioCtx.createOscillator();
-                lfo1.frequency.value = 3.5;
-                const lfo1Gain = audioCtx.createGain();
-                lfo1Gain.gain.value = 0.25;
-                const lfo2 = audioCtx.createOscillator();
-                lfo2.frequency.value = 1.1;
-                const lfo2Gain = audioCtx.createGain();
-                lfo2Gain.gain.value = 0.25;
-                const dc = audioCtx.createConstantSource();
-                dc.offset.value = 0.35;
-                lfo1.connect(lfo1Gain).connect(g.gain);
-                lfo2.connect(lfo2Gain).connect(g.gain);
-                dc.connect(g.gain);
-                src.connect(bp).connect(hp).connect(g).connect(masterGain);
-                src.start();
-                lfo1.start();
-                lfo2.start();
-                dc.start();
-                return () => {
-                    try {
-                        src.stop();
-                        lfo1.stop();
-                        lfo2.stop();
-                        dc.stop();
-                    } catch (e) {}
-                    [
-                        src,
-                        bp,
-                        hp,
-                        g,
-                        lfo1,
-                        lfo1Gain,
-                        lfo2,
-                        lfo2Gain,
-                        dc,
-                    ].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-            function buildTV() {
-                const src = makeBufferSource(createNoiseBuffer(2));
-                const hp = audioCtx.createBiquadFilter();
-                hp.type = "highpass";
-                hp.frequency.value = 120;
-                const lp = audioCtx.createBiquadFilter();
-                lp.type = "lowpass";
-                lp.frequency.value = 6500;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.6;
-                src.connect(hp).connect(lp).connect(g).connect(masterGain);
-                src.start();
-                return () => {
-                    try {
-                        src.stop();
-                    } catch (e) {}
-                    [src, hp, lp, g].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-            function buildConstruction() {
-                const out = audioCtx.createGain();
-                out.gain.value = 0.9;
-                const thumpGain = audioCtx.createGain();
-                thumpGain.gain.value = 0;
-                const thumpOsc = audioCtx.createOscillator();
-                thumpOsc.type = "sine";
-                thumpOsc.frequency.value = 65;
-                thumpOsc.connect(thumpGain).connect(out);
-                const nsrc = makeBufferSource(createNoiseBuffer(2));
-                const bp = audioCtx.createBiquadFilter();
-                bp.type = "bandpass";
-                bp.frequency.value = 700;
-                bp.Q.value = 1.2;
-                const ng = audioCtx.createGain();
-                ng.gain.value = 0.0;
-                nsrc.connect(bp).connect(ng).connect(out);
-                out.connect(masterGain);
-                thumpOsc.start();
-                nsrc.start();
-                let running = true;
-                function schedule() {
-                    if (!running) return;
-                    const now = audioCtx.currentTime;
-                    const interval = 0.8 + Math.random() * 0.9;
-                    thumpGain.gain.cancelScheduledValues(now);
-                    thumpGain.gain.setValueAtTime(0, now);
-                    thumpGain.gain.linearRampToValueAtTime(0.9, now + 0.03);
-                    thumpGain.gain.exponentialRampToValueAtTime(
-                        0.0001,
-                        now + 0.28,
-                    );
-                    ng.gain.cancelScheduledValues(now);
-                    ng.gain.setValueAtTime(0, now);
-                    ng.gain.linearRampToValueAtTime(0.7, now + 0.02);
-                    ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-                    setTimeout(schedule, interval * 1000);
-                }
-                schedule();
-                return () => {
-                    running = false;
-                    try {
-                        thumpOsc.stop();
-                        nsrc.stop();
-                    } catch (e) {}
-                    [out, thumpGain, thumpOsc, nsrc, bp, ng].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-            function buildLaundry() {
-                const osc = audioCtx.createOscillator();
-                osc.type = "sine";
-                osc.frequency.value = 90;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.0;
-                const lfo = audioCtx.createOscillator();
-                lfo.frequency.value = 0.7;
-                const lfoGain = audioCtx.createGain();
-                lfoGain.gain.value = 0.6;
-                lfo.connect(lfoGain).connect(g.gain);
-                osc.connect(g).connect(masterGain);
-                const nsrc = makeBufferSource(createNoiseBuffer(2));
-                const lp = audioCtx.createBiquadFilter();
-                lp.type = "lowpass";
-                lp.frequency.value = 300;
-                const ng = audioCtx.createGain();
-                ng.gain.value = 0.25;
-                nsrc.connect(lp).connect(ng).connect(masterGain);
-                osc.start();
-                lfo.start();
-                nsrc.start();
-                return () => {
-                    try {
-                        osc.stop();
-                        lfo.stop();
-                        nsrc.stop();
-                    } catch (e) {}
-                    [osc, g, lfo, lfoGain, nsrc, lp, ng].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-            function buildRain() {
-                const src = makeBufferSource(createNoiseBuffer(2));
-                const hp = audioCtx.createBiquadFilter();
-                hp.type = "highpass";
-                hp.frequency.value = 2000;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.25;
-                const lfo = audioCtx.createOscillator();
-                lfo.frequency.value = 3.2;
-                const lfoGain = audioCtx.createGain();
-                lfoGain.gain.value = 0.08;
-                lfo.connect(lfoGain).connect(g.gain);
-                src.connect(hp).connect(g).connect(masterGain);
-                src.start();
-                lfo.start();
-                return () => {
-                    try {
-                        src.stop();
-                        lfo.stop();
-                    } catch (e) {}
-                    [src, hp, g, lfo, lfoGain].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-            function buildTraffic() {
-                const src = makeBufferSource(createNoiseBuffer(2));
-                const lp = audioCtx.createBiquadFilter();
-                lp.type = "lowpass";
-                lp.frequency.value = 1200;
-                const hp = audioCtx.createBiquadFilter();
-                hp.type = "highpass";
-                hp.frequency.value = 60;
-                const g = audioCtx.createGain();
-                g.gain.value = 0.5;
-                src.connect(hp).connect(lp).connect(g).connect(masterGain);
-                src.start();
-                return () => {
-                    try {
-                        src.stop();
-                    } catch (e) {}
-                    [src, hp, lp, g].forEach((n) => {
-                        try {
-                            n.disconnect();
-                        } catch (e) {}
-                    });
-                };
-            }
-
-            const SOUND_BUILDERS = {
-                voice: buildVoice,
-                tv: buildTV,
-                construction: buildConstruction,
-                laundry: buildLaundry,
-                rain: buildRain,
-                traffic: buildTraffic,
+            // --- Sound file playback ---
+            const SOUND_FILES = {
+                voice: "sounds/voice.mp3",
+                tv: "sounds/tv.mp3",
+                construction: "sounds/construction.mp3",
+                laundry: "sounds/laundry.mp3",
+                rain: "sounds/rain.mp3",
+                traffic: "sounds/traffic.mp3",
             };
+            const audioBuffers = {}; // Cache for decoded audio data
 
-            function startSound(kind) {
-                ensureAudio();
-                audioCtx.resume();
-                stopSound();
-                const builder = SOUND_BUILDERS[kind];
-                if (!builder) return;
-                currentSoundStop = builder();
+            // Function to load and decode a sound file
+            async function loadSound(kind) {
+                if (audioBuffers[kind]) {
+                    return audioBuffers[kind]; // Return from cache
+                }
+                const filePath = SOUND_FILES[kind];
+                if (!filePath) {
+                    console.error(`Sound kind "${kind}" not found in SOUND_FILES.`);
+                    return null;
+                }
+                try {
+                    const response = await fetch(filePath);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    audioBuffers[kind] = audioBuffer; // Store in cache
+                    return audioBuffer;
+                } catch (e) {
+                    console.error(`Error loading sound "${kind}" from ${filePath}:`, e);
+                    alert(`音声ファイル「${filePath}」の読み込みに失敗しました。`);
+                    return null;
+                }
             }
+
+            // In this new implementation, currentSoundStop will hold the active AudioBufferSourceNode
+            async function startSound(kind) {
+                ensureAudio();
+                await audioCtx.resume();
+                stopSound(); // Stop any currently playing sound
+
+                const audioBuffer = await loadSound(kind);
+                if (!audioBuffer) {
+                    // Deselect the button if loading fails
+                    const activeBtn = document.querySelector(`.sound-btn[data-sound="${kind}"]`);
+                    if (activeBtn) {
+                        activeBtn.classList.remove("is-active");
+                        activeBtn.setAttribute("aria-pressed", "false");
+                    }
+                    return;
+                }
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.loop = true;
+                source.connect(masterGain);
+                source.start(0);
+
+                currentSoundStop = source; // Store the source node to stop it later
+            }
+
             function stopSound() {
                 if (currentSoundStop) {
-                    currentSoundStop();
+                    try {
+                        // stop() can be called only once
+                        currentSoundStop.stop(0);
+                        currentSoundStop.disconnect();
+                    } catch (e) {
+                        // Ignore errors, e.g., if the node was already stopped
+                    }
                     currentSoundStop = null;
                 }
             }
